@@ -40,7 +40,7 @@ pipeline {
 
         stage('Deploy to Kubernetes') {
             steps {
-                withCredentials([file(credentialsId: 'kubeconfig', variable: 'KUBECONFIG_FILE')]) {
+                withCredentials([file(credentialsId: 'kubeconfig_aws', variable: 'KUBECONFIG_FILE')]) {
                      sh '''
                          export KUBECONFIG=/etc/kubernetes/admin.conf
                             kubectl get nodes
