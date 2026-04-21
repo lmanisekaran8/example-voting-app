@@ -7,37 +7,12 @@ pipeline {
         KUBE_CONFIG = 'kubeconfig_aws'
     }
     stages {
-        stage('Clone Repository') {
+            stage('Clone Repo') {
             steps {
                 git 'https://github.com/mntforever/docker-samples-voting-app.git', branch: 'main'
-    }
-        }
-        stage('Build Docker Images') {
-            steps {
-                script {
-                    sh "docker build -t ${DOCKERHUB_REPO}/vote:latest ./vote"
-                    sh "docker build -t ${DOCKERHUB_REPO}/result:latest ./result"
-                    sh "docker build -t ${DOCKERHUB_REPO}/worker:latest ./worker"
-                }
             }
         }
-
-        stage('Push Images') {
-            steps {
-                withCredentials([usernamePassword(credentialsId: DOCKERHUB_CREDENTIALS,
-                    usernameVariable: 'USER',
-                    passwordVariable: 'PASS')]) {
-
-                    sh '''
-                        echo $PASS | docker login -u $USER --password-stdin
-                        docker push manisharchana/vote:latest
-                        docker push manisharchana/result:latest
-                        docker push manisharchana/worker:latest
-                    '''
-                }
-            }
-        }
-
+        
         stage('Deploy to Kubernetes') {
             steps {
                 withCredentials([file(credentialsId: 'kubeconfig_aws', variable: 'KUBECONFIG_FILE')]) {
@@ -70,6 +45,4 @@ pipeline {
         failure {
             echo 'Pipeline Failed!'
         }
-    }
-}
-}
+ }
