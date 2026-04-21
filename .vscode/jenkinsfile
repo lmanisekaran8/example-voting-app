@@ -1,0 +1,72 @@
+pipeline {
+    agent any
+
+    environment {
+        DOCKERHUB_CREDEENTIALS = 'dockerhub-creds'
+        DOCKERHUB_REPO = 'manisharchana'
+        KUBE_CONFIG = 'kubeconfig_aws'
+    }
+    stages {
+        stage('Clone Repository') {
+            steps {
+                git 'https://github.com/mntforever/docker-samples-voting-app.git', branch: 'main'
+    }
+        }
+        stage('Build Docker Images') {
+            steps {
+                script {
+                    sh "docker build -t ${DOCKERHUB_REPO}/vote:latest ./vote"
+                    sh "docker build -t ${DOCKERHUB_REPO}/result:latest ./result"
+                    sh "docker build -t ${DOCKERHUB_REPO}/worker:latest ./worker"
+                }
+            }
+        }
+
+        stage('Push Images') {
+            steps {
+                withCredentials([usernamePassword(credentialsId: DOCKERHUB_CREDENTIALS,
+                    usernameVariable: 'USER',
+                    passwordVariable: 'PASS')]) {
+
+                    sh '''
+                        echo $PASS | docker login -u $USER --password-stdin
+                        docker push manisharchana/vote:latest
+                        docker push manisharchana/result:latest
+                        docker push manisharchana/worker:latest
+                    '''
+                }
+            }
+        }
+
+        stage('Deploy to Kubernetes') {
+            steps {
+                withCredentials([file(credentialsId: KUBE_CONFIG, variable: 'KUBECONFIG')]) {
+                    sh '''
+                        kubectl apply -f k8s-specifications/
+                    '''
+                }
+            }
+        }
+
+        stage('Verify Deployment') {
+            steps {
+                withCredentials([file(credentialsId: KUBE_CONFIG, variable: 'KUBECONFIG')]) {
+                    sh '''
+                        kubectl get pods
+                        kubectl get svc
+                    '''
+                }
+            }
+        }
+    }
+
+    post {
+        success {
+            echo 'Deployment Successful!'
+        }
+        failure {
+            echo 'Pipeline Failed!'
+        }
+    }
+}
+}
