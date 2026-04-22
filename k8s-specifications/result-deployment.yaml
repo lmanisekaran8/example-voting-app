@@ -15,7 +15,7 @@ spec:
         app: result
     spec:
       containers:
-      - image: manisharchana/result:${BUILD_NUMBER}
+      - image: manisharchana/result:latest
         name: result
         ports:
         - containerPort: 80
